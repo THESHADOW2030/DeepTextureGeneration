@@ -22,7 +22,7 @@ class Block(nn.Module):
     
 
 class Discriminator(nn.Module):
-    def __init__(self, inChannels = 3, features = [64, 128, 256, 512]):
+    def __init__(self, inChannels = 3, features = [64, 128, 256, 512, 1024]):
         super(Discriminator, self).__init__()
 
 
