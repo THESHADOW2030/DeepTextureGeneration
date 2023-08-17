@@ -62,21 +62,21 @@ class Generator(nn.Module):
         
 
     def forward(self, x):
-        print("Input: ", x.shape)
+       # print("Input: ", x.shape)
         x = self.initial(x)
-        print("After initial: ", x.shape)
+       # print("After initial: ", x.shape)
         for layer in self.downBlocks:
             x = layer(x)
-            print("After down: ", x.shape)
+        #    print("After down: ", x.shape)
         x = self.residualBlocks(x)
-        print("After residual: ", x.shape)
+        #print("After residual: ", x.shape)
         x = self.convBlock512(x)
-        print("After convBlock512: ", x.shape)
+        #print("After convBlock512: ", x.shape)
         for layer in self.upBlocks:
             x = layer(x)
-            print("After up: ", x.shape)
+           # print("After up: ", x.shape)
         x = self.last(x)
-        print("After last: ", x.shape)
+        #print("After last: ", x.shape)
         return torch.tanh(x)
     
     
