@@ -13,6 +13,7 @@ class Textures(Dataset):
                   dataPath, 
                   transform=transforms.Compose([
                         transforms.Resize(width = 512, height = 512),
+                        transforms.Normalize(mean = [0.5, 0.5, 0.5], std = [0.5, 0.5, 0.5], max_pixel_value=255),
                         ToTensorV2()
                   ])
         ):
@@ -30,18 +31,29 @@ class Textures(Dataset):
     
     def __getitem__(self, index):
         
-        image  = Image.open(os.path.join(self.path, self.data[index])).convert('RGB')
-        image = np.array(image)
+        image  = Image.open(os.path.join(self.path, self.data[index % len(self.data)])).convert('RGB')
+        image = np.array(image) 
+
+        real = Image.open(os.path.join(self.path, self.data[np.random.randint(0, len(self.data))])).convert('RGB')
+        real = np.array(real)
 
         if self.transform is not None:
             image = self.transform(image = image)
-            image = image["image"]
+            image = image["image"].float()
+
+            real = self.transform(image = real)
+            real = real["image"].float()
+
+
 
 
         #crop the image at the center by half
         train = image[:, 256:768, 256:768]
 
-        return train, image
+
+        
+
+        return train, image, real
     
 
 
