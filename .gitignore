@@ -1,1 +1,8 @@
 data/
+results/
+logs/
+__pycache__/
+test/
+
+discriminatorWeights.pth.tar
+generatorWeights.pth.tar
