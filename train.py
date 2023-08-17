@@ -131,14 +131,14 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
     checkpoints = config.weightsName.GENERAL
     if style:
     #import resnet
-        print("Loading resnet")
+        print("=> Loading resnet")
         res = resnet50(weights=ResNet50_Weights.DEFAULT).to("cuda" if torch.cuda.is_available() else "cpu")
         #remove the last layer and freeze the rest
         res = nn.Sequential(*list(res.children())[:-1])
         for param in res.parameters():
             param.requires_grad = False
         res.eval()
-        print("Resnet loaded")
+        print("=> Resnet loaded")
 
         checkpoints = config.weightsName.GENERAL_STYLE
    
