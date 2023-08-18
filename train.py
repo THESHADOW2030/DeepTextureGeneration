@@ -91,10 +91,10 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
 
         loop.set_postfix(Disc_Loss=DLoss.item(), Gen_Loss=GFinalLoss.item(), Epoch=epoch)
 
-    #with probability 1/1000 save the images
-  
-    save_image(fake * 0.5 + 0.5, f"results/{epoch}.png")
-    save_image(fullImage * 0.5 + 0.5, f"results/{epoch}_real.png")
+   
+    if epoch % 50 == 0:
+        save_image(fake * 0.5 + 0.5, f"results/{dataset.trainingTarget}_{epoch}.png")
+        save_image(fullImage * 0.5 + 0.5, f"results/{dataset.trainingTarget}_{epoch}_real.png")
 
 
 
@@ -123,12 +123,24 @@ def loadCheckpoint(checkpoint_file, model, optimizer, lr):
 
 
 
-def main(loadModel = True, train = True, saveModel = True, epochs = 100, style = False):
+def main(loadModel = True, train = True, saveModel = True, epochs = 100, style = False, dataName = "general"):
 
 
 
     res = None
-    checkpoints = config.weightsName.GENERAL
+
+    if dataName == "general":
+        checkpoints = config.weightsName.GENERAL
+        if style:
+            checkpoints = config.weightsName.GENERAL_STYLE
+
+    elif dataName == "bubbly":
+        checkpoints = config.weightsName.bubbly_SPECIALIZED
+    
+    elif dataName == "fibrous":
+        checkpoints = config.weightsName.fibrous_SPECIALIZED
+
+
     if style:
     #import resnet
         print("=> Loading resnet")
@@ -158,7 +170,7 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
 
 
 
-    dataset = Textures(dataPath = "data")
+    dataset = Textures(dataPath = "data", trainingTarget=dataName)
     loader = DataLoader(dataset, batch_size=config.batchSize, shuffle=True, num_workers=config.numWorkers, pin_memory=True)
 
   
@@ -193,7 +205,7 @@ def testModel():
 
     gen = Generator(imgChannels=3, numResiduals=9).to("cuda")
     optimizer = optim.Adam(gen.parameters(), lr=config.learningRate, betas=(0.5, 0.999))
-    loadCheckpoint(config.weightsName.GENERAL["generator"], gen, optimizer, config.learningRate)
+    epoch = loadCheckpoint(config.weightsName.GENERAL["generator"], gen, optimizer, config.learningRate)
 
     transform = transforms.Compose([
         transforms.Resize(width = 256, height = 256),
@@ -213,7 +225,7 @@ def testModel():
         image = image.to("cuda" if torch.cuda.is_available() else "cpu")
         fake = gen(image)
         print(fake.shape)
-        save_image(fake * 0.5 + 0.5, f"results/test_{imageName.split(sep='.')[0]}_{time()}.png")
+        save_image(fake * 0.5 + 0.5, f"results/test_{imageName.split(sep='.')[0]}_{time()}_epoch={epoch}.png")
 
 
 
