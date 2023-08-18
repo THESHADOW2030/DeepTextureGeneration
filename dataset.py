@@ -16,17 +16,18 @@ class Textures(Dataset):
                         transforms.Normalize(mean = [0.5, 0.5, 0.5], std = [0.5, 0.5, 0.5], max_pixel_value=255),
                         ToTensorV2()
                   ]),
-                  trainingMode = "full"
+                  trainingTarget = "general"
         ):
         super(Dataset, self).__init__()
 
         self.path = dataPath
         self.data = os.listdir(self.path)
-        self.trainingMode = trainingMode
+        self.trainingTarget = trainingTarget
 
-        if self.trainingMode == "subset":
+        
+        if self.trainingTarget != "general":
             #filter out the images that do not start with a number
-            self.data = [image for image in self.data if image[0].isdigit()]
+            self.data = [image for image in self.data if image.startswith(self.trainingTarget)]
 
         self.transform = transform
 
