@@ -133,12 +133,19 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
         checkpoints = config.weightsName.GENERAL
         if style:
             checkpoints = config.weightsName.GENERAL_STYLE
+            print("=> Loading General Style")
+        else:
+            print("=> Loading General")
 
     elif dataName == "bubbly":
         checkpoints = config.weightsName.bubbly_SPECIALIZED
+        print("=> Loading Bubbly")
     
     elif dataName == "fibrous":
         checkpoints = config.weightsName.fibrous_SPECIALIZED
+        print("=> Loading Fibrous")
+
+    
 
 
     if style:
@@ -152,7 +159,7 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
         res.eval()
         print("=> Resnet loaded")
 
-        checkpoints = config.weightsName.GENERAL_STYLE
+
    
     discriminator = Discriminator(inChannels=3).to("cuda")
     generator = Generator(imgChannels=3, numResiduals=9).to("cuda")
