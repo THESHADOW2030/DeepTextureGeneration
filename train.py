@@ -100,6 +100,7 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
 
 def saveCheckpoint(model, optimizer, filename, epoch = 0):
     print("=> Saving checkpoint")
+    print(f"=> Saving to {filename}")
     checkpoint = {
         "state_dict": model.state_dict(),
         "optimizer": optimizer.state_dict(),
@@ -109,6 +110,7 @@ def saveCheckpoint(model, optimizer, filename, epoch = 0):
 
 def loadCheckpoint(checkpoint_file, model, optimizer, lr):
     print("=> Loading checkpoint")
+    print(f"=> Loading from {checkpoint_file}")
     checkpoint = torch.load(checkpoint_file, map_location="cuda" if torch.cuda.is_available() else "cpu")
     model.load_state_dict(checkpoint["state_dict"], strict=False)
     optimizer.load_state_dict(checkpoint["optimizer"])
@@ -128,6 +130,17 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
 
 
     res = None
+    if style:
+        #import resnet
+        print("=> Loading resnet")
+        res = resnet50(weights=ResNet50_Weights.DEFAULT).to("cuda" if torch.cuda.is_available() else "cpu")
+        #remove the last layer and freeze the rest
+        res = nn.Sequential(*list(res.children())[:-1])
+        for param in res.parameters():
+            param.requires_grad = False
+        res.eval()
+        print("=> Resnet loaded")
+
 
     if dataName == "general":
         checkpoints = config.weightsName.GENERAL
@@ -145,19 +158,18 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
         checkpoints = config.weightsName.fibrous_SPECIALIZED
         print("=> Loading Fibrous")
 
+    if loadModel:
+        #check if the checkpoints exist
+        if not os.path.exists(checkpoints["generator"]) or not os.path.exists(checkpoints["discriminator"]):
+            print("=> Checkpoints not found")
+            loadModel = False
+        else:
+            print("=> Checkpoints found")
+
+
     
 
 
-    if style:
-    #import resnet
-        print("=> Loading resnet")
-        res = resnet50(weights=ResNet50_Weights.DEFAULT).to("cuda" if torch.cuda.is_available() else "cpu")
-        #remove the last layer and freeze the rest
-        res = nn.Sequential(*list(res.children())[:-1])
-        for param in res.parameters():
-            param.requires_grad = False
-        res.eval()
-        print("=> Resnet loaded")
 
 
    
@@ -240,7 +252,7 @@ def testModel():
 
 
 if __name__ == "__main__":
-    testModel()
+    #testModel()
     fire.Fire(main)
 
     #import resnet as a feature extractor
