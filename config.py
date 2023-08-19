@@ -21,6 +21,14 @@ class weightsName:
             "dataName" : "fibrous"
         }
     
+    striped_SPECIALIZED= {
+            "generator" : "./weights/stripedGeneratorWeights.pth.tar",
+            "discriminator" : "./weights/stripedDiscriminatorWeights.pth.tar",
+            "dataName" : "striped"
+        }
+    
+
+    
     
 
 
