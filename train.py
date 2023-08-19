@@ -24,9 +24,13 @@ from albumentations.pytorch import ToTensorV2
 import os
 
 
+
+
 import config
 
 from torchvision.models import resnet50, ResNet50_Weights
+
+import torchvision
 
 
 
@@ -158,10 +162,19 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
         checkpoints = config.weightsName.fibrous_SPECIALIZED
         print("=> Loading Fibrous")
 
+    elif dataName == "striped":
+        checkpoints = config.weightsName.striped_SPECIALIZED
+        print("=> Loading Striped")
+
+    else:
+        print("=> Invalid data name")
+        exit()
+
     if loadModel:
         #check if the checkpoints exist
         if not os.path.exists(checkpoints["generator"]) or not os.path.exists(checkpoints["discriminator"]):
             print("=> Checkpoints not found")
+            print(f"=> Model weights will be saved to {checkpoints['generator']} and {checkpoints['discriminator']}")
             loadModel = False
         else:
             print("=> Checkpoints found")
@@ -224,27 +237,41 @@ def testModel():
 
     gen = Generator(imgChannels=3, numResiduals=9).to("cuda")
     optimizer = optim.Adam(gen.parameters(), lr=config.learningRate, betas=(0.5, 0.999))
-    epoch = loadCheckpoint(config.weightsName.GENERAL["generator"], gen, optimizer, config.learningRate)
+    epoch = loadCheckpoint(config.weightsName.bubbly_SPECIALIZED["generator"], gen, optimizer, config.learningRate)
 
-    transform = transforms.Compose([
-        transforms.Resize(width = 256, height = 256),
-        transforms.Normalize(mean = [0.5, 0.5, 0.5], std = [0.5, 0.5, 0.5], max_pixel_value=255),
-        ToTensorV2()
-    ])
-
+    dataset = Textures(dataPath = "data", trainingTarget="bubbly")
 
     gen.eval()
 
-    for imageName in os.listdir("./test"):
-        image = Image.open(os.path.join("./test", imageName)).convert('RGB')
-        image = np.array(image)
-        image = transform(image = image)
-        image = image["image"].float()
-        image = image.unsqueeze(0)
-        image = image.to("cuda" if torch.cuda.is_available() else "cpu")
-        fake = gen(image)
-        print(fake.shape)
-        save_image(fake * 0.5 + 0.5, f"results/test_{imageName.split(sep='.')[0]}_{time()}_epoch={epoch}.png")
+    #get random image
+    image = Image.open("./data/bubbly_0101.jpg")
+    
+    #crop the real image at a random location
+    trans = transforms.Compose([
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5]),
+        #random crop
+        transforms.RandomCrop(width=256, height=256),
+        ToTensorV2()
+    ])
+
+    image = trans(image = np.array(image))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
+
+    output = gen(image)
+    
+    #pad image to so it will go from 256 to 512
+    image = torch.nn.functional.pad(image, (128, 128, 128, 128), mode="reflect")
+
+    
+
+    #concatenate the image and the output
+    output = torch.cat((image, output), dim=3)
+
+    save_image(output * 0.5 + 0.5, f"results/Bobbly_test_{epoch}.png")
+
+
+
+
+
 
 
 
@@ -254,6 +281,8 @@ def testModel():
 if __name__ == "__main__":
     #testModel()
     fire.Fire(main)
+
+    #testModel()
 
     #import resnet as a feature extractor
 
