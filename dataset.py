@@ -12,24 +12,48 @@ class Textures(Dataset):
     def __init__(self,
                   dataPath, 
                   transform=transforms.Compose([
-                        transforms.Resize(width = 512, height = 512),
+                        transforms.Resize(height = 1024, width = 1024),
+                        transforms.RandomCrop(height = 512, width = 512),
                         transforms.Normalize(mean = [0.5, 0.5, 0.5], std = [0.5, 0.5, 0.5], max_pixel_value=255),
                         ToTensorV2()
                   ]),
-                  trainingTarget = "general"
+                  trainingTarget = "general",
+                  highResImagePath = "" #it's a file
         ):
         super(Dataset, self).__init__()
 
         self.path = dataPath
         self.data = os.listdir(self.path)
         self.trainingTarget = trainingTarget
+        self.highResImagePath = highResImagePath
+        self.transform = transform
+        self.highResImage = None
 
-        
+
+
+
+
         if self.trainingTarget != "general":
             #filter out the images that do not start with a number
             self.data = [image for image in self.data if image.startswith(self.trainingTarget)]
+            
 
-        self.transform = transform
+
+
+        if highResImagePath != "":
+            self.highResImage = Image.open(highResImagePath).convert('RGB')
+            self.highResImage = np.array(self.highResImage) 
+
+            customTransform = transforms.Compose([
+                transforms.Normalize(mean = [0.5, 0.5, 0.5], std = [0.5, 0.5, 0.5], max_pixel_value=255),
+                ToTensorV2()
+            ])
+
+            self.highResImage = customTransform(image = self.highResImage)["image"].float()
+            
+            
+        
+
 
         
 
@@ -37,6 +61,33 @@ class Textures(Dataset):
         return len(self.data)
     
     def __getitem__(self, index):
+        """
+        train: the image that is used to train the generator
+        image: the full image of train
+        real: a random image from the dataset
+        """
+
+
+        if self.highResImage is not None:
+            """
+            This if will be ran only when we want a super spelialized generator given a single texture
+            
+            """
+
+            image = transforms.random_crop(self.highResImage, 512, 512)
+            real = transforms.random_crop(self.highResImage, 512, 512)
+
+            X, Y = image.shape[1] // 2, image.shape[2] // 2
+
+            train = image[:, X - 128 : X + 128, Y - 128 : Y + 128]
+
+
+            
+
+            return train, image, real
+            
+            
+
         
         image  = Image.open(os.path.join(self.path, self.data[index % len(self.data)])).convert('RGB')
         image = np.array(image) 
@@ -46,6 +97,7 @@ class Textures(Dataset):
 
         if self.transform is not None:
             image = self.transform(image = image)
+
             image = image["image"].float()
 
             real = self.transform(image = real)
@@ -53,9 +105,12 @@ class Textures(Dataset):
 
 
 
+        #crop image at the center point
+        X, Y = image.shape[1] // 2, image.shape[2] // 2
 
-        #crop the image at the center by half
-        train = image[:, 256:768, 256:768]
+        train = image[:, X - 128 : X + 128, Y - 128 : Y + 128]
+
+
 
 
         
