@@ -94,6 +94,10 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
         step += 1
 
         loop.set_postfix(Disc_Loss=DLoss.item(), Gen_Loss=GFinalLoss.item(), Epoch=epoch)
+        """
+        trainImage = torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant")(trainImage)
+        save_image(torch.cat((trainImage, fullImage, fake)  * 0.5 + 0.5, dim=3), f"./tmp/striped_test_{epoch}.png")
+        """
 
    
     if epoch % 50 == 0:
@@ -234,18 +238,30 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
 
 def testModel():
     
+    checkpoints = config.weightsName.striped_SPECIALIZED    
 
     gen = Generator(imgChannels=3, numResiduals=9).to("cuda")
     optimizer = optim.Adam(gen.parameters(), lr=config.learningRate, betas=(0.5, 0.999))
-    epoch = loadCheckpoint(config.weightsName.bubbly_SPECIALIZED["generator"], gen, optimizer, config.learningRate)
-
-    dataset = Textures(dataPath = "data", trainingTarget="bubbly")
-
+    epoch = loadCheckpoint(checkpoints["generator"], gen, optimizer, config.learningRate)
     gen.eval()
 
+    #path = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/test/stripped_3.jpg"
+    path = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/striped_0035.jpg"
     #get random image
-    image = Image.open("./data/bubbly_0101.jpg")
+    image = Image.open(path)
     
+
+    image = image.convert('RGB')
+    image = np.array(image)
+
+    fullImage = Image.open(path).convert('RGB')
+    tmpTrans = transforms.Compose([
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5]),
+        transforms.Resize(height = 512, width = 512),
+        ToTensorV2()
+    ])
+    fullImage = tmpTrans(image = np.array(fullImage))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
+
     #crop the real image at a random location
     trans = transforms.Compose([
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5]),
@@ -256,18 +272,16 @@ def testModel():
 
     image = trans(image = np.array(image))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
 
-    output = gen(image)
-    
-    #pad image to so it will go from 256 to 512
-    image = torch.nn.functional.pad(image, (128, 128, 128, 128), mode="reflect")
+    tmp = image.float()    
 
+    output = gen(tmp) * 0.5 + 0.5
     
 
-    #concatenate the image and the output
-    output = torch.cat((image, output), dim=3)
+    
+    #pad the image to be 512
+    image = torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant")(image)
 
-    save_image(output * 0.5 + 0.5, f"results/Bobbly_test_{epoch}.png")
-
+    save_image(torch.cat((image, fullImage, output)  , dim=3), f"./tmp/striped_test_{epoch}.png")
 
 
 
@@ -279,7 +293,7 @@ def testModel():
 
 
 if __name__ == "__main__":
-    #testModel()
+    testModel()
     fire.Fire(main)
 
     #testModel()
