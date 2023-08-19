@@ -1,8 +1,10 @@
 data/
 results/
+resultsOLD/
 logs/
 __pycache__/
 test/
+highResData/
 
 discriminatorWeights.pth.tar
 generatorWeights.pth.tar
