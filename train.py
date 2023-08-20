@@ -77,8 +77,8 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
             GLoss = mse(DFake, torch.ones_like(DFake))  
             L1Loss = l1(fake, fullImage)
             if styleExtractor is not None:
-                styleLoss = l1(styleExtractor(fake), styleExtractor(fullImage))
-            GFinalLoss = GLoss + 100 * L1Loss + 50 * styleLoss                    
+                 contentLoss = l1(styleExtractor(fake), styleExtractor(fullImage))
+            GFinalLoss = GLoss + 100 * L1Loss + 50 * contentLoss                    
  
 
         optGen.zero_grad()
