@@ -62,22 +62,37 @@ class Generator(nn.Module):
         
 
     def forward(self, x):
-       # print("Input: ", x.shape)
+       # print("Input: ", x.shape)              torch.Size([1, 3, 256, 256])
         x = self.initial(x)
-       # print("After initial: ", x.shape)
+       # print("After initial: ", x.shape)      torch.Size([1, 64, 256, 256])
         for layer in self.downBlocks:
             x = layer(x)
-        #    print("After down: ", x.shape)
+        #    print("After down: ", x.shape)     torch.Size([1, 128, 128, 128]) torch.Size([1, 256, 64, 64])
         x = self.residualBlocks(x)
-        #print("After residual: ", x.shape)
+        #print("After residual: ", x.shape)     torch.Size([1, 256, 64, 64])
         x = self.convBlock512(x)
-        #print("After convBlock512: ", x.shape)
+        #print("After convBlock512: ", x.shape) torch.Size([1, 512, 64, 64])
         for layer in self.upBlocks:
             x = layer(x)
-           # print("After up: ", x.shape)
+           # print("After up: ", x.shape)       torch.Size([1, 64, 512, 512])
         x = self.last(x)
-        #print("After last: ", x.shape)
+        #print("After last: ", x.shape)         torch.Size([1, 3, 512, 512])
         return torch.tanh(x)
+    
+
+#PRINTS OF THE SIZE OF THE TENSORS
+"""
+Input:  torch.Size([1, 3, 256, 256])
+After initial:  torch.Size([1, 64, 256, 256])
+After down:  torch.Size([1, 128, 128, 128])
+After down:  torch.Size([1, 256, 64, 64])
+After residual:  torch.Size([1, 256, 64, 64])
+After convBlock512:  torch.Size([1, 512, 64, 64])
+After up:  torch.Size([1, 256, 128, 128])
+After up:  torch.Size([1, 128, 256, 256])
+After up:  torch.Size([1, 64, 512, 512])
+After last:  torch.Size([1, 3, 512, 512])
+ """
     
     
 
