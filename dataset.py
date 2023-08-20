@@ -41,15 +41,15 @@ class Textures(Dataset):
 
 
         if highResImagePath != "":
-            self.highResImage = Image.open(highResImagePath).convert('RGB')
-            self.highResImage = np.array(self.highResImage) 
+            self.data = [self.highResImagePath for _ in range(40)]
+            self.highResImage = Image.open(self.highResImagePath).convert('RGB')
+            self.highResImage = np.array(self.highResImage)
 
-            customTransform = transforms.Compose([
-                transforms.Normalize(mean = [0.5, 0.5, 0.5], std = [0.5, 0.5, 0.5], max_pixel_value=255),
-                ToTensorV2()
+            trans = transforms.Compose([
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5])
             ])
-
-            self.highResImage = customTransform(image = self.highResImage)["image"].float()
+            self.highResImage = trans(image = self.highResImage)["image"]
+    
             
             
         
@@ -60,6 +60,9 @@ class Textures(Dataset):
     def __len__(self):
         return len(self.data)
     
+
+
+
     def __getitem__(self, index):
         """
         train: the image that is used to train the generator
@@ -69,22 +72,28 @@ class Textures(Dataset):
 
 
         if self.highResImage is not None:
-            """
-            This if will be ran only when we want a super spelialized generator given a single texture
-            
-            """
 
-            image = transforms.random_crop(self.highResImage, 512, 512)
-            real = transforms.random_crop(self.highResImage, 512, 512)
+            image = self.highResImage
 
+            real = self.highResImage
+
+            trans = transforms.Compose([
+                transforms.RandomCrop(width=512, height=512),
+                ToTensorV2()
+            ])
+
+            image = trans(image = image)["image"]
             X, Y = image.shape[1] // 2, image.shape[2] // 2
 
             train = image[:, X - 128 : X + 128, Y - 128 : Y + 128]
 
+            real = trans(image = real)["image"]
+
+        
 
             
 
-            return train, image, real
+            return train.float(), image.float(), real.float()
             
             
 

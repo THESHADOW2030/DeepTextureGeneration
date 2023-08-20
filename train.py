@@ -40,14 +40,14 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
     loop = tqdm(loader, leave=True)
     step = 0
 
-    styleLoss = 0
+    contentLoss = 0
 
     for idx, (trainImage, fullImage, randomImage) in enumerate(loop):
         trainImage = trainImage.to("cuda" if torch.cuda.is_available() else "cpu")
         fullImage = fullImage.to("cuda" if torch.cuda.is_available() else "cpu")
         randomImage = randomImage.to("cuda" if torch.cuda.is_available() else "cpu")
 
-        #toss a coin to decide whether to use the real image or the fake image
+        #toss a coin to decide whether to use the expanded image or a random real image
         coin = torch.rand(1)
         if coin < 0.5:
             image = randomImage
@@ -96,7 +96,7 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
         loop.set_postfix(Disc_Loss=DLoss.item(), Gen_Loss=GFinalLoss.item(), Epoch=epoch)
         """
         trainImage = torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant")(trainImage)
-        save_image(torch.cat((trainImage, fullImage, fake)  * 0.5 + 0.5, dim=3), f"./tmp/striped_test_{epoch}.png")
+        save_image(torch.cat((trainImage   * 0.5 + 0.5, fullImage   * 0.5 + 0.5, fake  * 0.5 + 0.5), dim=3), f"./tmp/timber_test_{epoch}.png")
         """
 
    
@@ -136,7 +136,6 @@ def loadCheckpoint(checkpoint_file, model, optimizer, lr):
 def main(loadModel = True, train = True, saveModel = True, epochs = 100, style = False, dataName = "general"):
 
 
-
     res = None
     if style:
         #import resnet
@@ -170,6 +169,10 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
         checkpoints = config.weightsName.striped_SPECIALIZED
         print("=> Loading Striped")
 
+    elif dataName == "timber":
+        checkpoints = config.weightsName.timber_HighlySpecialized
+        print("=> Loading Timber")
+
     else:
         print("=> Invalid data name")
         exit()
@@ -182,11 +185,6 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
             loadModel = False
         else:
             print("=> Checkpoints found")
-
-
-    
-
-
 
 
    
@@ -206,7 +204,7 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
 
 
 
-    dataset = Textures(dataPath = "data", trainingTarget=dataName)
+    dataset = Textures(dataPath = "data", trainingTarget=dataName, highResImagePath=checkpoints["highResImagePath"])
     loader = DataLoader(dataset, batch_size=config.batchSize, shuffle=True, num_workers=config.numWorkers, pin_memory=True)
 
   
@@ -282,6 +280,7 @@ def testModel():
     image = torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant")(image)
 
     save_image(torch.cat((image, fullImage, output)  , dim=3), f"./tmp/striped_test_{epoch}.png")
+
 
 
 
