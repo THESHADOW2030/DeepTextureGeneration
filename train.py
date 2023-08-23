@@ -96,13 +96,15 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
         loop.set_postfix(Disc_Loss=DLoss.item(), Gen_Loss=GFinalLoss.item(), Epoch=epoch)
         """
         trainImage = torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant")(trainImage)
-        save_image(torch.cat((trainImage   * 0.5 + 0.5, fullImage   * 0.5 + 0.5, fake  * 0.5 + 0.5), dim=3), f"./tmp/timber_test_{epoch}.png")
+        save_image(torch.cat((trainImage   * 0.5 + 0.5, fullImage   * 0.5 + 0.5, fake  * 0.5 + 0.5), dim=3), f"./tmp/water_test_{epoch}.png")
         """
 
    
-    if epoch % 50 == 0:
+    if epoch % 500 == 0:
         save_image(fake * 0.5 + 0.5, f"results/{dataset.trainingTarget}_{epoch}.png")
         save_image(fullImage * 0.5 + 0.5, f"results/{dataset.trainingTarget}_{epoch}_real.png")
+
+
 
 
 
@@ -133,6 +135,8 @@ def loadCheckpoint(checkpoint_file, model, optimizer, lr):
 
 
 
+
+
 def main(loadModel = True, train = True, saveModel = True, epochs = 100, style = False, dataName = "general"):
 
 
@@ -148,6 +152,7 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
         res.eval()
         print("=> Resnet loaded")
 
+    dataPath = "data"
 
     if dataName == "general":
         checkpoints = config.weightsName.GENERAL
@@ -172,6 +177,15 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
     elif dataName == "timber":
         checkpoints = config.weightsName.timber_HighlySpecialized
         print("=> Loading Timber")
+    elif dataName == "water":
+        checkpoints = config.weightsName.water_HighlySpecialized
+        print("=> Loading Water")
+
+    elif dataName == "roofs":
+        checkpoints = config.weightsName.roofs_SPECIALIZED
+        dataPath = "data/Roofs"
+        print("=> Loading Roofs")
+
 
     else:
         print("=> Invalid data name")
@@ -204,7 +218,7 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
 
 
 
-    dataset = Textures(dataPath = "data", trainingTarget=dataName, highResImagePath=checkpoints["highResImagePath"])
+    dataset = Textures(dataPath = dataPath, trainingTarget=dataName, highResImagePath=checkpoints["highResImagePath"])
     loader = DataLoader(dataset, batch_size=config.batchSize, shuffle=True, num_workers=config.numWorkers, pin_memory=True)
 
   
@@ -270,7 +284,8 @@ def testModel():
 
     image = trans(image = np.array(image))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
 
-    tmp = image.float()    
+    tmp = image.float()  
+
 
     output = gen(tmp) * 0.5 + 0.5
     
@@ -286,13 +301,36 @@ def testModel():
 
 
 
+def testRandomNoise(ganType = "timber", path = "./weights"):
 
+    checkpoints = config.weightsName.timber_HighlySpecialized
+
+    
+    gen = Generator(imgChannels=3, numResiduals=9).to("cuda" if torch.cuda.is_available() else "cpu")
+    optimizer = optim.Adam(gen.parameters(), lr=config.learningRate, betas=(0.5, 0.999))
+    epoch = loadCheckpoint(checkpoints["generator"], gen, optimizer, config.learningRate)
+    gen.eval()
+
+    #image should be from -1 to 1 and have shape (1, 3, 256, 256).
+    image = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
+    #normalize the image with std and mean of 0.5
+    image = (image - 0.5) / 0.5
+
+    output = gen(image) * 0.5 + 0.5
+
+
+    save_image(output, f"./tmp/randomNoise_{ganType}_test_{epoch}.png")
+    print(f"=> Saved to ./tmp/randomNoise_{ganType}_test_{epoch}.png")
+
+  
 
 
 
 
 if __name__ == "__main__":
-    testModel()
+    #testModel()
+    
+    testRandomNoise()
     fire.Fire(main)
 
     #testModel()
