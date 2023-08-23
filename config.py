@@ -38,6 +38,19 @@ class weightsName:
             "dataName" : "timber",
             "highResImagePath" : "./highResData/timber.jpg"
     }
+
+    roofs_SPECIALIZED= {    
+            "generator" : "./weights/roofsGeneratorWeights.pth.tar",
+            "discriminator" : "./weights/roofsDiscriminatorWeights.pth.tar",
+            "dataName" : "roofs",
+            "highResImagePath" : ""
+        }
+    water_HighlySpecialized = {
+        "generator" : "./weights/waterGeneratorWeights.pth.tar",
+        "discriminator" : "./weights/waterDiscriminatorWeights.pth.tar",
+        "dataName" : "water",
+        "highResImagePath" : "./highResData/water.jpg"
+    }
     
 
     
