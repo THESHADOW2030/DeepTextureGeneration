@@ -29,11 +29,13 @@ class Textures(Dataset):
         self.transform = transform
         self.highResImage = None
 
+        
 
 
 
 
-        if self.trainingTarget != "general":
+
+        if self.trainingTarget != "general" and self.path == "data":
             #filter out the images that do not start with a number
             self.data = [image for image in self.data if image.startswith(self.trainingTarget)]
             
