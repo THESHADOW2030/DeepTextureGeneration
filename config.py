@@ -51,6 +51,35 @@ class weightsName:
         "dataName" : "water",
         "highResImagePath" : "./highResData/water.jpg"
     }
+
+    grassWithRocks_HighlySpecialized = {
+        "generator" : "./weights/grassWithRocksGeneratorWeights.pth.tar",
+        "discriminator" : "./weights/grassWithRocksDiscriminatorWeights.pth.tar",
+        "dataName" : "grassWithRocks",
+        "highResImagePath" : "./highResData/grassWithRocks.jpg"
+    }
+
+    grassWithRocks2_HighlySpecialized = {
+        "generator" : "./weights/grassWithRocks2GeneratorWeights.pth.tar",
+        "discriminator" : "./weights/grassWithRocks2DiscriminatorWeights.pth.tar",
+        "dataName" : "grassWithRocks2",
+        "highResImagePath" : "./highResData/grassWithRocks.jpg"
+    }
+
+    grass_HighlySpecialized = {
+        "generator" : "./weights/grassGeneratorWeights.pth.tar",
+        "discriminator" : "./weights/grassDiscriminatorWeights.pth.tar",
+        "dataName" : "grass",
+        "highResImagePath" : "./highResData/grass.jpg"
+    }
+
+    stars_HighlySpecialized = {
+        "generator" : "./weights/starsGeneratorWeights.pth.tar",
+        "discriminator" : "./weights/starsDiscriminatorWeights.pth.tar",
+        "dataName" : "stars",
+        "highResImagePath" : "./highResData/stars.jpg"
+    }
+    
     
 
     
