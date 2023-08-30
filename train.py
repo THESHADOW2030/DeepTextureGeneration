@@ -44,13 +44,15 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
 
     for idx, (trainImage, fullImage, randomImage) in enumerate(loop):
         trainImage = trainImage.to("cuda" if torch.cuda.is_available() else "cpu")
-        fullImage = fullImage.to("cuda" if torch.cuda.is_available() else "cpu")
+        fullImage = fullImage.to("cuda" if torch.cuda.is_available() else "cpu")#get a random index
+            
         randomImage = randomImage.to("cuda" if torch.cuda.is_available() else "cpu")
 
         #toss a coin to decide whether to use the expanded image or a random real image
         coin = torch.rand(1)
         if coin < 0.5:
             image = randomImage
+
         else:
             image = fullImage
 
@@ -100,7 +102,7 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
         """
 
    
-    if epoch % 500 == 0:
+    if epoch % 250 == 0:
         save_image(fake * 0.5 + 0.5, f"results/{dataset.trainingTarget}_{epoch}.png")
         save_image(fullImage * 0.5 + 0.5, f"results/{dataset.trainingTarget}_{epoch}_real.png")
 
@@ -186,6 +188,24 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
         dataPath = "data/Roofs"
         print("=> Loading Roofs")
 
+    elif dataName == "grassWithRocks":
+        checkpoints = config.weightsName.grassWithRocks_HighlySpecialized
+        
+        print("=> Loading Grass With Rocks")
+
+    elif dataName == "grassWithRocks2":
+        checkpoints = config.weightsName.grassWithRocks2_HighlySpecialized
+        
+        print("=> Loading Grass With Rocks 2: training also on random noise")
+
+    elif dataName == "grass":
+        checkpoints = config.weightsName.grass_HighlySpecialized
+
+        print("=> Loading Grass")
+
+    elif dataName == "stars":
+        checkpoints = config.weightsName.stars_HighlySpecialized    
+        print("=> Loading Stars")
 
     else:
         print("=> Invalid data name")
@@ -250,7 +270,7 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
 
 def testModel():
     
-    checkpoints = config.weightsName.striped_SPECIALIZED    
+    checkpoints = config.weightsName.grassWithRocks_HighlySpecialized    
 
     gen = Generator(imgChannels=3, numResiduals=9).to("cuda")
     optimizer = optim.Adam(gen.parameters(), lr=config.learningRate, betas=(0.5, 0.999))
@@ -294,27 +314,54 @@ def testModel():
     #pad the image to be 512
     image = torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant")(image)
 
-    save_image(torch.cat((image, fullImage, output)  , dim=3), f"./tmp/striped_test_{epoch}.png")
+    save_image(torch.cat((image, fullImage, output)  , dim=3), f"./tmp/{checkpoints['dataName']}_test_{epoch}.png")
 
 
 
 
 
 
-def testRandomNoise(ganType = "timber", path = "./weights"):
+def testRandomNoise(ganType = "stars", path = "./weights"):
 
-    checkpoints = config.weightsName.timber_HighlySpecialized
+    checkpoints = config.weightsName.stars_HighlySpecialized
+
+    ganType = checkpoints["dataName"]
+    imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/Roofs/Roof 12 - 512x512.png"
+    imagePath2 = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/Roofs/Roof 8 - 512x512.png"
+    image = Image.open(imagePath).convert('RGB')
+    image = np.array(image)
+
+    image2 = Image.open(imagePath2).convert('RGB')
+    image2 = np.array(image2)
+
+
+    #crop the image 256x256
+    trans = transforms.Compose([
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5]),
+        #random crop
+        transforms.RandomCrop(width=256, height=256),
+        ToTensorV2()
+    ])
+
+    image = trans(image = np.array(image))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
+
+    image2 = trans(image = np.array(image2))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
+
+    coef = 0.6
+
+    #random noise
+    image = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
+    image2 = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
+
+    #add random noise
+    image = image * coef + image2 * (1 - coef)
+
 
     
     gen = Generator(imgChannels=3, numResiduals=9).to("cuda" if torch.cuda.is_available() else "cpu")
     optimizer = optim.Adam(gen.parameters(), lr=config.learningRate, betas=(0.5, 0.999))
     epoch = loadCheckpoint(checkpoints["generator"], gen, optimizer, config.learningRate)
     gen.eval()
-
-    #image should be from -1 to 1 and have shape (1, 3, 256, 256).
-    image = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
-    #normalize the image with std and mean of 0.5
-    image = (image - 0.5) / 0.5
 
     output = gen(image) * 0.5 + 0.5
 
@@ -325,12 +372,53 @@ def testRandomNoise(ganType = "timber", path = "./weights"):
   
 
 
+def testHighResModel():
+
+    checkpoints = config.weightsName.grassWithRocks2_HighlySpecialized
+
+    #load the image
+    imagePath = checkpoints["highResImagePath"]
+    image = Image.open(imagePath).convert('RGB')
+    image = np.array(image)
+
+    #randomlySample the image
+    trans = transforms.Compose([
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5]),
+        #random crop
+        transforms.RandomCrop(width=256, height=256),
+        ToTensorV2()
+    ])
+
+    images = [trans(image = np.array(image))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu") for i in range(10)]
+
+    gen = Generator(imgChannels=3, numResiduals=9).to("cuda" if torch.cuda.is_available() else "cpu")
+    optimizer = optim.Adam(gen.parameters(), lr=config.learningRate, betas=(0.5, 0.999))
+    epoch = loadCheckpoint(checkpoints["generator"], gen, optimizer, config.learningRate)
+    gen.eval()
+
+    for i, image in enumerate(images):
+        output = gen(image) 
+        save_image(torch.cat((torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant", fill=255)(image) * 0.5 + 0.5, output* 0.5 + 0.5)  , dim=3), f"./finalImages/conditioned_timber_{i}.png")
+        print(f"=> Saved to ./finalImages/conditioned_timber_{i}.png")
+
+        #random noise
+        image = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
+        #normalize the image with std and mean of 0.5
+        image = (image - 0.5) / 0.5
+        output = gen(image) * 0.5 + 0.5
+        save_image(output, f"./finalImages/random_grassWithRocks_{i}.png")
+        print(f"=> Saved to ./finalImages/random_grassWithRocks_{i}.png")
+
+
+
+    
 
 
 if __name__ == "__main__":
     #testModel()
-    
+    #testHighResModel()
     testRandomNoise()
+    
     fire.Fire(main)
 
     #testModel()
