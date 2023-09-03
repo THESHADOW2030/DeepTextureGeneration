@@ -48,7 +48,8 @@ class Textures(Dataset):
             self.highResImage = np.array(self.highResImage)
 
             trans = transforms.Compose([
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5])
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5]), 
+                transforms.Resize(height = 2048, width = 2048)
             ])
             self.highResImage = trans(image = self.highResImage)["image"]
     
