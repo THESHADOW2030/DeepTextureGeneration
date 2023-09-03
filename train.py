@@ -52,7 +52,9 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
         coin = torch.rand(1)
         if coin < 0.5:
             image = randomImage
-
+            #add random gaussian noise N(0, I)
+            image = image + torch.randn_like(image) * 0.1
+            
         else:
             image = fullImage
 
@@ -79,7 +81,7 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
             GLoss = mse(DFake, torch.ones_like(DFake))  
             L1Loss = l1(fake, fullImage)
             if styleExtractor is not None:
-                 contentLoss = l1(styleExtractor(fake), styleExtractor(fullImage))
+                 contentLoss = mse(styleExtractor(fake), styleExtractor(fullImage))
             GFinalLoss = GLoss + 100 * L1Loss + 50 * contentLoss                    
  
 
@@ -148,11 +150,15 @@ def main(loadModel = True, train = True, saveModel = True, epochs = 100, style =
         print("=> Loading resnet")
         res = resnet50(weights=ResNet50_Weights.DEFAULT).to("cuda" if torch.cuda.is_available() else "cpu")
         #remove the last layer and freeze the rest
-        res = nn.Sequential(*list(res.children())[:-1])
+        res = nn.Sequential(*list(res.children())[:-2])
         for param in res.parameters():
             param.requires_grad = False
         res.eval()
         print("=> Resnet loaded")
+        #print(res)
+
+        #print(res(torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")).shape)
+        #exit()
 
     dataPath = "data"
 
@@ -321,18 +327,14 @@ def testModel():
 
 
 
-def testRandomNoise(ganType = "stars", path = "./weights"):
+def testRandomNoise(ganType = "", path = "./weights"):
 
-    checkpoints = config.weightsName.stars_HighlySpecialized
+    checkpoints = config.weightsName.water_HighlySpecialized
 
     ganType = checkpoints["dataName"]
-    imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/Roofs/Roof 12 - 512x512.png"
-    imagePath2 = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/Roofs/Roof 8 - 512x512.png"
+    imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/highResData/water.jpg"
     image = Image.open(imagePath).convert('RGB')
     image = np.array(image)
-
-    image2 = Image.open(imagePath2).convert('RGB')
-    image2 = np.array(image2)
 
 
     #crop the image 256x256
@@ -345,12 +347,12 @@ def testRandomNoise(ganType = "stars", path = "./weights"):
 
     image = trans(image = np.array(image))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
 
-    image2 = trans(image = np.array(image2))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
+    #image2 = trans(image = np.array(image2))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
 
-    coef = 0.6
+    coef = 0.9
 
     #random noise
-    image = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
+    #image = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
     image2 = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
 
     #add random noise
@@ -417,7 +419,7 @@ def testHighResModel():
 if __name__ == "__main__":
     #testModel()
     #testHighResModel()
-    testRandomNoise()
+    #testRandomNoise()
     
     fire.Fire(main)
 
