@@ -62,21 +62,24 @@ class Generator(nn.Module):
         
 
     def forward(self, x):
-       # print("Input: ", x.shape)              torch.Size([1, 3, 256, 256])
+        #print("Input: ", x.shape)              #torch.Size([1, 3, 256, 256])
         x = self.initial(x)
-       # print("After initial: ", x.shape)      torch.Size([1, 64, 256, 256])
+        #print("After initial: ", x.shape)      #torch.Size([1, 64, 256, 256])
+        
         for layer in self.downBlocks:
             x = layer(x)
-        #    print("After down: ", x.shape)     torch.Size([1, 128, 128, 128]) torch.Size([1, 256, 64, 64])
+        
+        skipConnection = x
+        #print("After down: ", x.shape)     #torch.Size([1, 128, 128, 128]) torch.Size([1, 256, 64, 64])
         x = self.residualBlocks(x)
-        #print("After residual: ", x.shape)     torch.Size([1, 256, 64, 64])
-        x = self.convBlock512(x)
-        #print("After convBlock512: ", x.shape) torch.Size([1, 512, 64, 64])
+        #print("After residual: ", x.shape)     #torch.Size([1, 256, 64, 64])
+        x = torch.cat([x, skipConnection], dim=1)
+        #print("After skipConnection: ", x.shape) #torch.Size([1, 512, 64, 64])
         for layer in self.upBlocks:
-            x = layer(x)
-           # print("After up: ", x.shape)       torch.Size([1, 64, 512, 512])
+            x = layer(x) 
+            #print("After up: ", x.shape)       #torch.Size([1, 64, 512, 512])
         x = self.last(x)
-        #print("After last: ", x.shape)         torch.Size([1, 3, 512, 512])
+        #print("After last: ", x.shape)         #torch.Size([1, 3, 512, 512])
         return torch.tanh(x)
     
 
