@@ -36,6 +36,7 @@ import torchvision
 
 
 
+
 def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar, dScalar, dataset, styleExtractor = None):
     loop = tqdm(loader, leave=True)
     step = 0
@@ -53,7 +54,7 @@ def trainFN(disc, gen, loader, optDisc, optGen, l1, mse, epoch, writer, gScalar,
         if coin < 0.5:
             image = randomImage
             #add random gaussian noise N(0, I)
-            image = image + torch.randn_like(image) * 0.1
+            image = image + torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
             
         else:
             image = fullImage
@@ -329,16 +330,22 @@ def testModel():
 
 def testRandomNoise(ganType = "", path = "./weights"):
 
-    checkpoints = config.weightsName.water_HighlySpecialized
+    checkpoints = config.weightsName.striped_SPECIALIZED
 
     ganType = checkpoints["dataName"]
-    imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/highResData/water.jpg"
+    #imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/striped_0035.jpg"
+    imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/test/stripped_4.jpg"
     image = Image.open(imagePath).convert('RGB')
     image = np.array(image)
 
 
+    imagePath2 = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/striped_0081.jpg"
+    image2 = Image.open(imagePath2).convert('RGB')
+    image2 = np.array(image2)
+
     #crop the image 256x256
     trans = transforms.Compose([
+        transforms.Resize(width=512, height=512),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5,0.5]),
         #random crop
         transforms.RandomCrop(width=256, height=256),
@@ -347,13 +354,13 @@ def testRandomNoise(ganType = "", path = "./weights"):
 
     image = trans(image = np.array(image))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
 
-    #image2 = trans(image = np.array(image2))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
+    image2 = trans(image = np.array(image2))["image"].unsqueeze(0).to("cuda" if torch.cuda.is_available() else "cpu")
 
-    coef = 0.9
+    coef = 1
 
     #random noise
-    #image = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
-    image2 = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
+    #image = torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
+    #image2 = torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
 
     #add random noise
     image = image * coef + image2 * (1 - coef)
@@ -368,15 +375,15 @@ def testRandomNoise(ganType = "", path = "./weights"):
     output = gen(image) * 0.5 + 0.5
 
 
-    save_image(output, f"./tmp/randomNoise_{ganType}_test_{epoch}.png")
-    print(f"=> Saved to ./tmp/randomNoise_{ganType}_test_{epoch}.png")
+    save_image(output, f"./tmp/randomNoise_{ganType}_test_{epoch + 1}.png")
+    print(f"=> Saved to ./tmp/randomNoise_{ganType}_test_{epoch + 1}.png")
 
   
 
 
 def testHighResModel():
 
-    checkpoints = config.weightsName.grassWithRocks2_HighlySpecialized
+    checkpoints = config.weightsName.striped_SPECIALIZED
 
     #load the image
     imagePath = checkpoints["highResImagePath"]
@@ -417,14 +424,9 @@ def testHighResModel():
 
 
 if __name__ == "__main__":
-    #testModel()
-    #testHighResModel()
-    #testRandomNoise()
     
     fire.Fire(main)
 
-    #testModel()
-
-    #import resnet as a feature extractor
+  
 
    
