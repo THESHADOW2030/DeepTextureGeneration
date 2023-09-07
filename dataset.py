@@ -29,7 +29,8 @@ class Textures(Dataset):
         self.transform = transform
         self.highResImage = None
 
-        
+        #filter out the directories
+        self.data = [image for image in self.data if os.path.isfile(os.path.join(self.path, image))]
 
 
 
