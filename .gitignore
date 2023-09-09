@@ -8,5 +8,8 @@ highResData/
 
 discriminatorWeights.pth.tar
 generatorWeights.pth.tar
-*png
+
 *.tar
+
+tmp/
+finalImages/
