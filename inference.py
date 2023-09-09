@@ -50,7 +50,70 @@ def loadCheckpoint(checkpoint_file, model, optimizer, lr):
 
 
 
+def returnConfigCheckpoints(dataName, style = False):
+    dataPath = "data"
+
+    if dataName == "general":
+        checkpoints = config.weightsName.GENERAL
+        if style:
+            checkpoints = config.weightsName.GENERAL_STYLE
+            print("=> Loading General Style")
+        else:
+            print("=> Loading General")
+
+    elif dataName == "bubbly":
+        checkpoints = config.weightsName.bubbly_SPECIALIZED
+        print("=> Loading Bubbly")
+    
+    elif dataName == "fibrous":
+        checkpoints = config.weightsName.fibrous_SPECIALIZED
+        print("=> Loading Fibrous")
+
+    elif dataName == "striped":
+        checkpoints = config.weightsName.striped_SPECIALIZED
+        print("=> Loading Striped")
+
+    elif dataName == "timber":
+        checkpoints = config.weightsName.timber_HighlySpecialized
+        print("=> Loading Timber")
+    elif dataName == "water":
+        checkpoints = config.weightsName.water_HighlySpecialized
+        print("=> Loading Water")
+
+    elif dataName == "roofs":
+        checkpoints = config.weightsName.roofs_SPECIALIZED
+        dataPath = "data/Roofs"
+        print("=> Loading Roofs")
+
+    elif dataName == "grassWithRocks":
+        checkpoints = config.weightsName.grassWithRocks_HighlySpecialized
+        
+        print("=> Loading Grass With Rocks")
+
+    elif dataName == "grassWithRocks2":
+        checkpoints = config.weightsName.grassWithRocks2_HighlySpecialized
+        
+        print("=> Loading Grass With Rocks 2: training also on random noise")
+
+    elif dataName == "grass":
+        checkpoints = config.weightsName.grass_HighlySpecialized
+
+        print("=> Loading Grass")
+
+    elif dataName == "stars":
+        checkpoints = config.weightsName.stars_HighlySpecialized    
+        print("=> Loading Stars")
+
+    else:
+        print("=> Invalid data name")
+        exit()
+
+    return checkpoints, dataPath
+
+
 def testModel():
+
+    #USED FOR MY TESTINGS
     
     checkpoints = config.weightsName.grassWithRocks_HighlySpecialized    
 
@@ -105,18 +168,22 @@ def testModel():
 
 def testRandomNoise(ganType = "", path = "./weights"):
 
-    checkpoints = config.weightsName.striped_SPECIALIZED
+    "CHANGE THE PATH TO THE IMAGE YOU WANT TO TEST"
+
+    checkpoints, dataPath = returnConfigCheckpoints(ganType)
 
     ganType = checkpoints["dataName"]
-    #imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/striped_0035.jpg"
-    imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/test/stripped_4.jpg"
+    imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/striped_0035.jpg"
+    #imagePath = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/Roofs/Roof 7 - 512x512.png"
     image = Image.open(imagePath).convert('RGB')
     image = np.array(image)
 
 
-    imagePath2 = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/striped_0081.jpg"
+    imagePath2 = "/home/shadow2030/Documents/deepLearning/DeepLearningProject/data/Roofs/Roof 18 - 512x512.png"
     image2 = Image.open(imagePath2).convert('RGB')
     image2 = np.array(image2)
+
+    
 
     #crop the image 256x256
     trans = transforms.Compose([
@@ -134,8 +201,8 @@ def testRandomNoise(ganType = "", path = "./weights"):
     coef = 1
 
     #random noise
-    #image = torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
-    #image2 = torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
+    image = torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
+    image2 = torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
 
     #add random noise
     image = image * coef + image2 * (1 - coef)
@@ -156,9 +223,12 @@ def testRandomNoise(ganType = "", path = "./weights"):
   
 
 
-def testHighResModel():
 
-    checkpoints = config.weightsName.striped_SPECIALIZED
+
+
+def testHighResModel(ganType = "", path = "./weights", coef = 1):
+
+    checkpoints, dataPath = returnConfigCheckpoints(ganType)
 
     #load the image
     imagePath = checkpoints["highResImagePath"]
@@ -180,22 +250,26 @@ def testHighResModel():
     epoch = loadCheckpoint(checkpoints["generator"], gen, optimizer, config.learningRate)
     gen.eval()
 
+    name = checkpoints["dataName"]
+
     for i, image in enumerate(images):
-        output = gen(image) 
-        save_image(torch.cat((torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant", fill=255)(image) * 0.5 + 0.5, output* 0.5 + 0.5)  , dim=3), f"./finalImages/conditioned_timber_{i}.png")
-        print(f"=> Saved to ./finalImages/conditioned_timber_{i}.png")
+        noise = torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
+        image = image * coef + noise * (1 - coef)
+        output = gen(image)
 
-        #random noise
-        image = torch.randn((1, 3, 256, 256)).to("cuda" if torch.cuda.is_available() else "cpu")
+        save_image(torch.cat((torchvision.transforms.Pad(padding= (128, 128, 128, 128),padding_mode="constant", fill=255)(image) * 0.5 + 0.5, output* 0.5 + 0.5)  , dim=3), f"./finalImages/conditioned_{name}_{epoch + 1}_{i}.png")
+        print(f"=> Saved to ./finalImages/conditioned_{name}_{epoch + 1}_{i}.png")
+        image = torch.normal(0, 1, size=image.shape).to("cuda" if torch.cuda.is_available() else "cpu")
         #normalize the image with std and mean of 0.5
-        image = (image - 0.5) / 0.5
+        
         output = gen(image) * 0.5 + 0.5
-        save_image(output, f"./finalImages/random_grassWithRocks_{i}.png")
-        print(f"=> Saved to ./finalImages/random_grassWithRocks_{i}.png")
-
-
+        save_image(output, f"./finalImages/random_{name}_{epoch + 1}_{i}.png")
+        print(f"=> Saved to ./finalImages/random_{name}_{epoch + 1}_{i}.png")
 
 
 
 if __name__ == "__main__":
-    pass
+ 
+    fire.Fire()
+
+
